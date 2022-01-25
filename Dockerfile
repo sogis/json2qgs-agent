@@ -1,7 +1,5 @@
 # extend the official jenkins slave base image
-FROM registry.redhat.io/openshift4/ose-jenkins:v4.7
-
-USER root
+FROM openshift/jenkins-slave-base-centos7:v3.11
 
 # specify wanted version of python
 ENV PYTHON_VERSION=3.6.1 \
@@ -10,13 +8,12 @@ ENV PYTHON_VERSION=3.6.1 \
 # install python
 RUN set -x \
     && sed -i 's/override_install_langs=en_US.utf8/#override_install_langs=en_US.utf8/g' /etc/yum.conf \
-    && dnf update -y glibc-common \
+    && yum update -y glibc-common \
     && localedef -c -i de_CH -f UTF-8 de_CH.UTF-8 \
     && echo "LANG=de_CH.UTF-8" > /etc/locale.conf \
-#    && chown -R root:root /var/lib/jenkins \
-    && INSTALL_PKGS="gcc make openssl-devel zlib-devel" \
-    && dnf install -y --setopt=tsflags=nodocs $INSTALL_PKGS wget \
-    && dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+    && chown -R root:root /home/jenkins \
+    && INSTALL_PKGS="gcc make openssl-devel zlib-devel epel-release" \
+    && yum install -y --setopt=tsflags=nodocs $INSTALL_PKGS wget \
     && cd /tmp \
     && wget https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tgz \
     && tar xf Python-${PYTHON_VERSION}.tgz \
@@ -25,11 +22,11 @@ RUN set -x \
     && make altinstall \
     && cd .. \
     && rm -rf Python-${Python_VERSION} \
-    && dnf install -y --setopt=tsflags=nodocs python3-pip uwsgi uwsgi-plugin-python3 postgresql-devel python3-devel \
-    && dnf remove -y $INSTALL_PKGS \
-    && dnf clean all \
-    && rm -rf /var/cache/dnf
-#    && chown 1001:0 /var/lib/jenkins
+    && yum install -y --setopt=tsflags=nodocs python3-pip uwsgi uwsgi-python3 postgresql-dev python3-dev musl-dev \
+    && yum remove -y $INSTALL_PKGS \
+    && yum clean all \
+    && rm -rf /var/cache/yum \
+    && chown 1001:0 /home/jenkins
 
 RUN groupadd -r www-data \
 	&& useradd -r -d /var/www/ -s /sbin/nologin -g www-data www-data
